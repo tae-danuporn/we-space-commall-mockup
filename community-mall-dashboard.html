@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>We Space Community Mall Payap — Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F4F5F7;
+    --surface:#FFFFFF;
+    --border:#E5E7EB;
+    --border-soft:#EEF0F3;
+    --ink:#111827;
+    --ink-2:#667085;
+    --ink-3:#98A2B3;
+
+    --sidebar-bg:#1B2233;
+    --sidebar-bg-2:#232B3F;
+    --sidebar-text:#A6ADC2;
+    --sidebar-text-active:#FFFFFF;
+
+    --accent:#B7791F;
+    --accent-ink:#8A5A14;
+    --accent-soft:#FBF1DE;
+
+    --success:#187A54;
+    --success-soft:#E4F5EC;
+
+    --warning:#C08829;
+    --warning-soft:#FCF2DE;
+
+    --neutral-status:#98A2B3;
+    --neutral-status-soft:#F1F2F5;
+
+    --danger:#C0362C;
+    --danger-soft:#FBEAE8;
+
+    --radius-card:12px;
+    --radius-sm:8px;
+  }
+
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    font-family:'Noto Sans Thai', -apple-system, BlinkMacSystemFont, sans-serif;
+    background:var(--bg);
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+  }
+
+  .app{ display:grid; grid-template-columns:240px 1fr; min-height:100vh; }
+
+  /* ---------- Sidebar ---------- */
+  .sidebar{
+    background:var(--sidebar-bg);
+    color:var(--sidebar-text);
+    display:flex; flex-direction:column;
+    position:sticky; top:0; height:100vh;
+    overflow-y:auto;
+  }
+  .brand{
+    display:flex; align-items:center; gap:11px;
+    padding:22px 20px 18px 20px;
+    border-bottom:1px solid rgba(255,255,255,0.08);
+  }
+  .brand-mark{
+    width:34px; height:34px; border-radius:8px;
+    background:linear-gradient(155deg, var(--accent), #8A5A14);
+    display:flex; align-items:center; justify-content:center;
+    color:#fff; font-weight:700; font-size:15px; flex-shrink:0;
+  }
+  .brand-text .name{ color:#fff; font-size:14px; font-weight:700; line-height:1.3; }
+  .brand-text .sub{ font-size:11.5px; color:var(--sidebar-text); margin-top:1px; }
+
+  .nav{ padding:14px 12px; flex:1; }
+  .nav-item{
+    display:flex; align-items:center; gap:11px;
+    padding:9px 12px; margin-bottom:2px;
+    border-radius:8px; font-size:14px; font-weight:500;
+    color:var(--sidebar-text); text-decoration:none;
+    cursor:default; position:relative;
+  }
+  .nav-item svg{ width:18px; height:18px; flex-shrink:0; opacity:0.85; }
+  .nav-item.active{
+    background:var(--sidebar-bg-2);
+    color:var(--sidebar-text-active);
+  }
+  .nav-item.active svg{ opacity:1; color:var(--accent); }
+  .nav-item.active::before{
+    content:""; position:absolute; left:-12px; top:8px; bottom:8px; width:3px;
+    background:var(--accent); border-radius:0 3px 3px 0;
+  }
+
+  .sidebar-foot{
+    padding:14px 20px 18px; border-top:1px solid rgba(255,255,255,0.08);
+    font-size:11.5px; color:var(--ink-3);
+  }
+
+  /* ---------- Main / Topbar ---------- */
+  .main{ display:flex; flex-direction:column; min-width:0; }
+  .topbar{
+    height:66px; background:var(--surface); border-bottom:1px solid var(--border);
+    display:flex; align-items:center; justify-content:space-between;
+    padding:0 28px; position:sticky; top:0; z-index:5;
+  }
+  .topbar-title h1{ font-size:16.5px; margin:0; font-weight:700; }
+  .topbar-title p{ font-size:12px; color:var(--ink-2); margin:1px 0 0; }
+
+  .search-box{
+    display:flex; align-items:center; gap:8px;
+    background:var(--bg); border:1px solid var(--border);
+    border-radius:8px; padding:8px 12px; width:300px; color:var(--ink-3);
+    font-size:13px;
+  }
+  .search-box svg{ width:16px; height:16px; flex-shrink:0; }
+
+  .topbar-right{ display:flex; align-items:center; gap:16px; }
+  .btn-add{
+    display:flex; align-items:center; gap:6px;
+    background:var(--accent); color:#fff; border:none;
+    padding:9px 14px; border-radius:8px; font-size:13px; font-weight:600;
+    font-family:inherit; cursor:default;
+  }
+  .btn-add svg{ width:15px; height:15px; }
+
+  .icon-btn{
+    position:relative; width:36px; height:36px; border-radius:8px;
+    display:flex; align-items:center; justify-content:center;
+    color:var(--ink-2); border:1px solid var(--border); background:var(--surface);
+  }
+  .icon-btn svg{ width:17px; height:17px; }
+  .badge-dot{
+    position:absolute; top:5px; right:6px; width:7px; height:7px;
+    border-radius:50%; background:var(--danger); border:1.5px solid var(--surface);
+  }
+
+  .user-chip{ display:flex; align-items:center; gap:9px; padding-left:6px; border-left:1px solid var(--border); }
+  .avatar{
+    width:34px; height:34px; border-radius:50%;
+    background:var(--sidebar-bg); color:#fff; font-weight:700; font-size:13px;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .user-chip .u-name{ font-size:13px; font-weight:600; line-height:1.3; }
+  .user-chip .u-role{ font-size:11.5px; color:var(--ink-2); }
+
+  /* ---------- Content ---------- */
+  .content{ padding:26px 30px 50px; }
+
+  .section-label{
+    font-size:12px; color:var(--ink-2); font-weight:600; margin:0 0 10px 2px;
+  }
+
+  .grid-kpi{ display:grid; grid-template-columns:1.5fr 1fr 1fr 1fr; gap:18px; margin-bottom:22px; }
+  .grid-charts{ display:grid; grid-template-columns:1.7fr 1fr; gap:18px; margin-bottom:22px; }
+  .grid-lists{ display:grid; grid-template-columns:1.7fr 1fr; gap:18px; }
+
+  .card{
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:var(--radius-card); padding:19px 20px;
+  }
+  .card-head{ display:flex; align-items:baseline; justify-content:space-between; margin-bottom:14px; }
+  .card-title{ font-size:13.5px; font-weight:700; color:var(--ink); margin:0; }
+  .card-sub{ font-size:11.5px; color:var(--ink-3); }
+
+  /* KPI 1 — occupancy overview */
+  .kpi-occupancy .big-number{ font-size:28px; font-weight:800; letter-spacing:-0.5px; }
+  .kpi-occupancy .big-number span{ font-size:13px; font-weight:600; color:var(--ink-2); margin-left:4px; }
+
+  .stack-bar{ display:flex; height:9px; border-radius:5px; overflow:hidden; margin:14px 0 12px; background:var(--border-soft); }
+  .stack-seg.rented{ background:var(--success); }
+  .stack-seg.negotiating{ background:var(--warning); }
+  .stack-seg.vacant{ background:var(--neutral-status); }
+
+  .legend-row{ display:flex; gap:18px; flex-wrap:wrap; }
+  .legend-item{ display:flex; align-items:center; gap:7px; font-size:12.5px; color:var(--ink-2); }
+  .dot{ width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+  .dot.rented{ background:var(--success); }
+  .dot.negotiating{ background:var(--warning); }
+  .dot.vacant{ background:var(--neutral-status); }
+  .legend-item b{ color:var(--ink); font-weight:700; }
+
+  /* KPI 2 & 3 — money cards */
+  .money-number{ font-size:25px; font-weight:800; letter-spacing:-0.3px; margin-bottom:6px; }
+  .money-number.accent{ color:var(--accent-ink); }
+  .money-number.danger{ color:var(--danger); }
+  .trend{ display:flex; align-items:center; gap:5px; font-size:12px; color:var(--success); font-weight:600; }
+  .trend svg{ width:13px; height:13px; }
+  .foot-note{ font-size:12px; color:var(--ink-3); }
+
+  /* KPI 4 — task card */
+  .task-row{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:9px 0; border-bottom:1px solid var(--border-soft);
+  }
+  .task-row:last-child{ border-bottom:none; padding-bottom:0; }
+  .task-row:first-child{ padding-top:0; }
+  .task-label{ display:flex; align-items:center; gap:9px; font-size:13px; color:var(--ink); }
+  .task-label svg{ width:16px; height:16px; color:var(--ink-3); }
+  .task-count{
+    font-size:12.5px; font-weight:700; padding:2px 9px; border-radius:20px;
+  }
+  .task-count.repair{ background:var(--danger-soft); color:var(--danger); }
+  .task-count.contract{ background:var(--warning-soft); color:var(--accent-ink); }
+
+  /* Revenue chart */
+  .bars{ display:flex; align-items:flex-end; gap:16px; height:150px; padding-top:10px; }
+  .bar-col{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%; }
+  .bar-value{ font-size:11px; color:var(--ink-2); font-weight:700; margin-bottom:6px; opacity:0; }
+  .bar-col.current .bar-value{ opacity:1; color:var(--accent-ink); }
+  .bar{ width:100%; max-width:34px; border-radius:5px 5px 0 0; background:var(--border-soft); }
+  .bar-col.current .bar{ background:var(--accent); }
+  .bar-month{ font-size:11.5px; color:var(--ink-3); margin-top:9px; }
+  .bar-col.current .bar-month{ color:var(--ink); font-weight:700; }
+
+  /* Donut */
+  .donut-wrap{ display:flex; align-items:center; gap:18px; }
+  .donut{
+    width:104px; height:104px; border-radius:50%; flex-shrink:0;
+    background:conic-gradient(
+      var(--success) 0deg 162deg,
+      var(--warning) 162deg 225deg,
+      var(--neutral-status) 225deg 360deg
+    );
+    position:relative;
+  }
+  .donut::after{
+    content:""; position:absolute; inset:16px; border-radius:50%; background:var(--surface);
+  }
+  .donut-legend{ display:flex; flex-direction:column; gap:10px; }
+  .donut-legend .legend-item b{ margin-left:auto; padding-left:10px; }
+
+  /* Activity feed */
+  .activity{ display:flex; gap:12px; padding:11px 0; border-bottom:1px solid var(--border-soft); }
+  .activity:last-child{ border-bottom:none; padding-bottom:0; }
+  .activity:first-child{ padding-top:0; }
+  .a-icon{
+    width:32px; height:32px; border-radius:8px; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .a-icon svg{ width:15px; height:15px; }
+  .a-icon.contract{ background:var(--warning-soft); color:var(--accent-ink); }
+  .a-icon.payment{ background:var(--success-soft); color:var(--success); }
+  .a-icon.repair{ background:var(--danger-soft); color:var(--danger); }
+  .a-icon.lead{ background:var(--neutral-status-soft); color:var(--ink-2); }
+  .a-body .a-text{ font-size:13px; color:var(--ink); line-height:1.5; }
+  .a-body .a-text b{ font-weight:700; }
+  .a-body .a-time{ font-size:11.5px; color:var(--ink-3); margin-top:1px; }
+
+  /* Expiring contracts mini table */
+  .table-row{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:10px 0; border-bottom:1px solid var(--border-soft);
+  }
+  .table-row:last-child{ border-bottom:none; padding-bottom:0; }
+  .table-row:first-child{ padding-top:0; }
+  .tr-shop{ font-size:13px; font-weight:600; color:var(--ink); }
+  .tr-unit{ font-size:11.5px; color:var(--ink-3); margin-top:1px; }
+  .tr-days{ font-size:12px; font-weight:700; padding:3px 9px; border-radius:20px; white-space:nowrap; }
+  .tr-days.urgent{ background:var(--danger-soft); color:var(--danger); }
+  .tr-days.soon{ background:var(--warning-soft); color:var(--accent-ink); }
+
+  @media (max-width:1180px){
+    .grid-kpi{ grid-template-columns:1fr 1fr; }
+    .grid-charts, .grid-lists{ grid-template-columns:1fr; }
+  }
+  @media (max-width:860px){
+    .app{ grid-template-columns:76px 1fr; }
+    .brand-text, .nav-item span, .sidebar-foot{ display:none; }
+    .brand{ justify-content:center; }
+    .nav-item{ justify-content:center; }
+    .nav-item.active::before{ left:0; }
+    .search-box{ display:none; }
+    .grid-kpi{ grid-template-columns:1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ============ SIDEBAR ============ -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">W</div>
+      <div class="brand-text">
+        <div class="name">We Space Community Mall</div>
+        <div class="sub">Management System</div>
+      </div>
+    </div>
+
+    <nav class="nav">
+      <a class="nav-item active">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+        <span>Dashboard</span>
+      </a>
+      <a class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V9l8-5 8 5v12"/><path d="M9 21v-7h6v7"/></svg>
+        <span>พื้นที่เช่า</span>
+      </a>
+      <a class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.2"/><path d="M5 20c0-3.6 3.1-6.2 7-6.2s7 2.6 7 6.2"/><path d="M17 3.5c1.6.5 2.7 1.9 2.7 3.6 0 1.6-1 3-2.5 3.6"/></svg>
+        <span>ผู้สนใจเช่า</span>
+      </a>
+      <a class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M2.5 20c0-3.6 2.9-6.2 6.5-6.2s6.5 2.6 6.5 6.2"/><circle cx="18" cy="9" r="2.4"/><path d="M15.5 14.2c2.9.3 5 2.6 5 5.8"/></svg>
+        <span>ผู้เช่า</span>
+      </a>
+      <a class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h6"/></svg>
+        <span>สัญญา</span>
+      </a>
+      <a class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5.5" width="19" height="13" rx="2"/><path d="M2.5 10h19"/><path d="M6 15h4"/></svg>
+        <span>ค่าเช่าและการชำระเงิน</span>
+      </a>
+      <a class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 3.5a3.5 3.5 0 0 0-5 5L4 14v4.5A1.5 1.5 0 0 0 5.5 20H10l5.5-5.5a3.5 3.5 0 0 0 5-5z"/><path d="M8.5 16.5 6 14"/></svg>
+        <span>แจ้งซ่อม</span>
+      </a>
+      <a class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11v3a1 1 0 0 0 1 1h1l3 4v-13l-3 4H5a1 1 0 0 0-1 1z"/><path d="M14 8.5c1.5 1.2 1.5 5.8 0 7"/><path d="M17 5.5c3 2.6 3 10.4 0 13"/></svg>
+        <span>ประกาศ</span>
+      </a>
+      <a class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M12 20V4M20 20v-7"/></svg>
+        <span>รายงาน</span>
+      </a>
+      <a class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 13.5a7.9 7.9 0 0 0 0-3l2-1.5-2-3.4-2.4 1a7.7 7.7 0 0 0-2.6-1.5L14 2.5h-4l-.4 2.6a7.7 7.7 0 0 0-2.6 1.5l-2.4-1-2 3.4 2 1.5a7.9 7.9 0 0 0 0 3l-2 1.5 2 3.4 2.4-1c.8.7 1.7 1.2 2.6 1.5l.4 2.6h4l.4-2.6c.9-.3 1.8-.8 2.6-1.5l2.4 1 2-3.4z"/></svg>
+        <span>ตั้งค่า</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-foot">v0.1 — Mockup สำหรับนำเสนอ</div>
+  </aside>
+
+  <!-- ============ MAIN ============ -->
+  <div class="main">
+
+    <header class="topbar">
+      <div class="topbar-title">
+        <h1>ภาพรวมโครงการ</h1>
+        <p>We Space Community Mall Payap — อัปเดตล่าสุดวันนี้ 08:00 น.</p>
+      </div>
+
+      <div class="search-box">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        ค้นหาร้านค้า ผู้เช่า หรือสัญญา
+      </div>
+
+      <div class="topbar-right">
+        <button class="btn-add">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          เพิ่มผู้สนใจเช่าใหม่
+        </button>
+        <div class="icon-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+          <span class="badge-dot"></span>
+        </div>
+        <div class="user-chip">
+          <div class="avatar">ส</div>
+          <div>
+            <div class="u-name">คุณสมชาย ใจดี</div>
+            <div class="u-role">ผู้จัดการโครงการ</div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="content">
+
+      <!-- ============ KPI ROW ============ -->
+      <div class="grid-kpi">
+
+        <div class="card kpi-occupancy">
+          <div class="card-head">
+            <p class="card-title">สถานะพื้นที่เช่า</p>
+            <span class="card-sub">รวม 40 ยูนิต</span>
+          </div>
+          <div class="big-number">18 <span>ยูนิตมีผู้เช่าแล้ว</span></div>
+          <div class="stack-bar">
+            <div class="stack-seg rented" style="width:45%"></div>
+            <div class="stack-seg negotiating" style="width:17.5%"></div>
+            <div class="stack-seg vacant" style="width:37.5%"></div>
+          </div>
+          <div class="legend-row">
+            <div class="legend-item"><span class="dot rented"></span>เช่าแล้ว <b>18</b></div>
+            <div class="legend-item"><span class="dot negotiating"></span>กำลังเจรจา <b>7</b></div>
+            <div class="legend-item"><span class="dot vacant"></span>ว่าง <b>15</b></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <p class="card-title">รายรับค่าเช่าเดือนนี้</p>
+          </div>
+          <div class="money-number accent">฿540,000</div>
+          <div class="trend">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg>
+            เพิ่มขึ้น 2.8% จากเดือนก่อน
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <p class="card-title">ยอดค้างชำระ</p>
+          </div>
+          <div class="money-number danger">฿65,000</div>
+          <div class="foot-note">จาก 5 ร้านค้าที่ยังไม่ชำระ</div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <p class="card-title">งานที่ต้องติดตาม</p>
+          </div>
+          <div class="task-row">
+            <div class="task-label">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 3.5a3.5 3.5 0 0 0-5 5L4 14v4.5A1.5 1.5 0 0 0 5.5 20H10l5.5-5.5a3.5 3.5 0 0 0 5-5z"/></svg>
+              แจ้งซ่อมค้างดำเนินการ
+            </div>
+            <span class="task-count repair">4 รายการ</span>
+          </div>
+          <div class="task-row">
+            <div class="task-label">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg>
+              สัญญาใกล้หมดอายุ
+            </div>
+            <span class="task-count contract">3 สัญญา</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ============ CHART ROW ============ -->
+      <div class="grid-charts">
+
+        <div class="card">
+          <div class="card-head">
+            <p class="card-title">แนวโน้มรายรับ 6 เดือนล่าสุด</p>
+            <span class="card-sub">หน่วย: บาท</span>
+          </div>
+          <div class="bars">
+            <div class="bar-col"><div class="bar-value">480,000</div><div class="bar" style="height:70%"></div><div class="bar-month">เม.ย.</div></div>
+            <div class="bar-col"><div class="bar-value">495,000</div><div class="bar" style="height:76%"></div><div class="bar-month">พ.ค.</div></div>
+            <div class="bar-col"><div class="bar-value">510,000</div><div class="bar" style="height:82%"></div><div class="bar-month">มิ.ย.</div></div>
+            <div class="bar-col"><div class="bar-value">525,000</div><div class="bar" style="height:88%"></div><div class="bar-month">ก.ค.</div></div>
+            <div class="bar-col"><div class="bar-value">530,000</div><div class="bar" style="height:91%"></div><div class="bar-month">ส.ค.</div></div>
+            <div class="bar-col current"><div class="bar-value">540,000</div><div class="bar" style="height:100%"></div><div class="bar-month">ก.ย.</div></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <p class="card-title">สรุปสถานะพื้นที่เช่า</p>
+          </div>
+          <div class="donut-wrap">
+            <div class="donut"></div>
+            <div class="donut-legend">
+              <div class="legend-item"><span class="dot rented"></span>เช่าแล้ว <b>45%</b></div>
+              <div class="legend-item"><span class="dot negotiating"></span>กำลังเจรจา <b>17.5%</b></div>
+              <div class="legend-item"><span class="dot vacant"></span>ว่าง <b>37.5%</b></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ============ LIST ROW ============ -->
+      <div class="grid-lists">
+
+        <div class="card">
+          <div class="card-head">
+            <p class="card-title">กิจกรรมล่าสุด</p>
+          </div>
+
+          <div class="activity">
+            <div class="a-icon contract">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg>
+            </div>
+            <div class="a-body">
+              <div class="a-text"><b>ABC Cafe</b> ส่งเอกสารสัญญาเช่าเรียบร้อยแล้ว</div>
+              <div class="a-time">10 นาทีที่แล้ว</div>
+            </div>
+          </div>
+
+          <div class="activity">
+            <div class="a-icon payment">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5.5" width="19" height="13" rx="2"/><path d="M2.5 10h19"/></svg>
+            </div>
+            <div class="a-body">
+              <div class="a-text">ร้าน <b>XYZ</b> ชำระค่าเช่าประจำเดือนกันยายนแล้ว</div>
+              <div class="a-time">45 นาทีที่แล้ว</div>
+            </div>
+          </div>
+
+          <div class="activity">
+            <div class="a-icon repair">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 3.5a3.5 3.5 0 0 0-5 5L4 14v4.5A1.5 1.5 0 0 0 5.5 20H10l5.5-5.5a3.5 3.5 0 0 0 5-5z"/></svg>
+            </div>
+            <div class="a-body">
+              <div class="a-text">ร้าน <b>DEF</b> แจ้งซ่อมระบบไฟฟ้าภายในร้าน</div>
+              <div class="a-time">2 ชั่วโมงที่แล้ว</div>
+            </div>
+          </div>
+
+          <div class="activity">
+            <div class="a-icon lead">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M2.5 20c0-3.6 2.9-6.2 6.5-6.2s6.5 2.6 6.5 6.2"/><path d="M17 8h4M19 6v4"/></svg>
+            </div>
+            <div class="a-body">
+              <div class="a-text">มีร้านใหม่ <b>Sweet Bake House</b> ติดต่อขอเช่าพื้นที่</div>
+              <div class="a-time">4 ชั่วโมงที่แล้ว</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <p class="card-title">สัญญาใกล้หมดอายุ</p>
+          </div>
+
+          <div class="table-row">
+            <div>
+              <div class="tr-shop">ABC Cafe</div>
+              <div class="tr-unit">ยูนิต A-102</div>
+            </div>
+            <span class="tr-days urgent">เหลือ 12 วัน</span>
+          </div>
+          <div class="table-row">
+            <div>
+              <div class="tr-shop">Bloom Florist</div>
+              <div class="tr-unit">ยูนิต B-206</div>
+            </div>
+            <span class="tr-days soon">เหลือ 20 วัน</span>
+          </div>
+          <div class="table-row">
+            <div>
+              <div class="tr-shop">Tech Zone</div>
+              <div class="tr-unit">ยูนิต C-115</div>
+            </div>
+            <span class="tr-days soon">เหลือ 27 วัน</span>
+          </div>
+        </div>
+
+      </div>
+
+    </main>
+  </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,100 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Noto Sans Thai', -apple-system, BlinkMacSystemFont, sans-serif;
+
+  /* Background & surface */
+  --color-bg: #F4F5F7;
+  --color-surface: #FFFFFF;
+  --color-border: #E5E7EB;
+  --color-border-soft: #EEF0F3;
+
+  /* Ink (text) */
+  --color-ink: #111827;
+  --color-ink-2: #667085;
+  --color-ink-3: #98A2B3;
+
+  /* Sidebar */
+  --color-sidebar-bg: #1B2233;
+  --color-sidebar-bg-2: #232B3F;
+  --color-sidebar-text: #A6ADC2;
+  --color-sidebar-text-active: #FFFFFF;
+
+  /* Accent (gold) */
+  --color-accent: #B7791F;
+  --color-accent-ink: #8A5A14;
+  --color-accent-soft: #FBF1DE;
+
+  /* Status colors */
+  --color-success: #187A54;
+  --color-success-soft: #E4F5EC;
+
+  --color-warning: #C08829;
+  --color-warning-soft: #FCF2DE;
+
+  --color-neutral-status: #98A2B3;
+  --color-neutral-status-soft: #F1F2F5;
+
+  --color-danger: #C0362C;
+  --color-danger-soft: #FBEAE8;
+
+  /* Radius */
+  --radius-card: 12px;
+  --radius-sm: 8px;
+}
+
+/* Base resets */
+* { box-sizing: border-box; }
+
+html, body, #root {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--color-bg);
+  color: var(--color-ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* App grid layout — matches original mockup */
+.app-grid {
+  grid-template-columns: 240px 1fr;
+}
+
+/* Responsive breakpoints matching original mockup */
+@media (max-width: 860px) {
+  .app-grid {
+    grid-template-columns: 76px 1fr;
+  }
+  .brand-text,
+  .nav-label,
+  .sidebar-footer {
+    display: none;
+  }
+  /* Center sidebar items when collapsed */
+  .app-grid aside nav a {
+    justify-content: center;
+  }
+  .app-grid aside > div:first-child {
+    justify-content: center;
+  }
+  /* Adjust active bar position for collapsed sidebar */
+  .app-grid aside nav a .absolute.-left-3 {
+    left: 0;
+  }
+}
+
+/* Scrollbar styling for sidebar */
+.sidebar-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+.sidebar-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.sidebar-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.12);
+  border-radius: 2px;
+}
