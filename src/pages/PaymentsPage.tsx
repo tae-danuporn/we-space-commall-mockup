@@ -1,8 +1,8 @@
-import { useState, useMemo } from 'react';
-import { Search, X, FileText, CheckCircle, AlertCircle } from 'lucide-react';
+import { useState, useMemo, useRef } from 'react';
+import { Search, X, FileText, CheckCircle, AlertCircle, Download, Printer, Building } from 'lucide-react';
 import Topbar from '../components/layout/Topbar';
-import { payments, tenants, units } from '../data/mockData';
-import type { PaymentStatus } from '../types';
+import { payments, tenants, units, contracts } from '../data/mockData';
+import type { PaymentStatus, Payment } from '../types';
 
 const statusConfig: Record<PaymentStatus, { label: string; bg: string; text: string; icon: React.ReactNode }> = {
   paid:    { label: 'ชำระแล้ว',      bg: 'bg-success-soft',  text: 'text-success',    icon: <CheckCircle size={13} /> },
@@ -12,9 +12,223 @@ const statusConfig: Record<PaymentStatus, { label: string; bg: string; text: str
 
 type FilterStatus = 'all' | PaymentStatus;
 
+/* ── Receipt Modal ── */
+function ReceiptModal({ payment, onClose }: { payment: Payment; onClose: () => void }) {
+  const receiptRef = useRef<HTMLDivElement>(null);
+  const tenant = tenants.find((t) => t.id === payment.tenantId);
+  const unit = tenant ? units.find((u) => u.id === tenant.unitId) : null;
+  const contract = contracts.find((c) => c.id === payment.contractId);
+
+  const receiptNo = `RC-${payment.month.replace('-', '')}-${payment.id.replace('p', '').padStart(3, '0')}`;
+  const monthLabel = (() => {
+    const [y, m] = payment.month.split('-');
+    const thaiMonths = ['', 'ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+    return `${thaiMonths[parseInt(m)]} ${parseInt(y) + 543}`;
+  })();
+
+  const commonFee = unit?.commonFee || 0;
+  const rent = payment.amount;
+  const total = rent + commonFee;
+
+  const handlePrint = () => {
+    const printContent = receiptRef.current;
+    if (!printContent) return;
+    const win = window.open('', '_blank', 'width=800,height=600');
+    if (!win) return;
+    win.document.write(`
+      <html>
+      <head>
+        <title>ใบเสร็จรับเงิน ${receiptNo}</title>
+        <style>
+          body { font-family: 'Segoe UI', Tahoma, sans-serif; padding: 40px; color: #1a1a1a; }
+          .receipt { max-width: 600px; margin: 0 auto; }
+          .header { text-align: center; margin-bottom: 24px; border-bottom: 2px solid #333; padding-bottom: 16px; }
+          .header h1 { font-size: 20px; margin: 0 0 4px; }
+          .header p { font-size: 12px; color: #666; margin: 2px 0; }
+          .meta { display: flex; justify-content: space-between; margin-bottom: 20px; font-size: 13px; }
+          .meta-item { }
+          .meta-label { color: #888; font-size: 11px; }
+          .meta-value { font-weight: 600; }
+          table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 13px; }
+          th { text-align: left; padding: 8px 12px; background: #f5f5f5; border: 1px solid #ddd; font-weight: 600; }
+          td { padding: 8px 12px; border: 1px solid #ddd; }
+          td.right { text-align: right; }
+          .total-row td { font-weight: 700; background: #f0f9ff; font-size: 14px; }
+          .footer { margin-top: 40px; display: flex; justify-content: space-between; font-size: 12px; color: #888; }
+          .signature { text-align: center; margin-top: 60px; }
+          .signature .line { border-top: 1px solid #333; width: 200px; margin: 0 auto 4px; }
+          .signature p { font-size: 12px; color: #666; }
+          .stamp { display: inline-block; border: 2px solid #22c55e; color: #22c55e; padding: 4px 16px; border-radius: 4px; font-weight: 700; font-size: 14px; transform: rotate(-5deg); margin-top: 12px; }
+          @media print { body { padding: 20px; } }
+        </style>
+      </head>
+      <body>
+        ${printContent.innerHTML}
+      </body>
+      </html>
+    `);
+    win.document.close();
+    win.focus();
+    win.print();
+  };
+
+  return (
+    <>
+      <div className="fixed inset-0 bg-black/30 z-50" onClick={onClose} />
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="bg-surface rounded-card border border-border shadow-xl w-full max-w-[640px] max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+
+          {/* Modal header */}
+          <div className="flex items-center justify-between px-6 py-4 border-b border-border shrink-0">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-sm bg-accent-soft flex items-center justify-center">
+                <FileText size={18} className="text-accent-ink" />
+              </div>
+              <div>
+                <h2 className="text-[15px] font-bold text-ink m-0">ใบเสร็จรับเงิน</h2>
+                <p className="text-[12px] text-ink-3 m-0">{receiptNo}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handlePrint}
+                className="flex items-center gap-1.5 px-3 py-2 bg-accent text-white border-none rounded-sm text-[12px] font-semibold cursor-pointer font-[inherit] hover:bg-accent-ink transition-colors"
+              >
+                <Printer size={13} />
+                พิมพ์ / PDF
+              </button>
+              <button onClick={onClose} className="w-8 h-8 rounded-sm flex items-center justify-center text-ink-3 hover:text-ink hover:bg-bg border border-border cursor-pointer bg-surface transition-colors">
+                <X size={16} />
+              </button>
+            </div>
+          </div>
+
+          {/* Receipt content */}
+          <div className="overflow-y-auto flex-1 p-6">
+            <div ref={receiptRef}>
+              {/* Receipt header */}
+              <div className="header" style={{ textAlign: 'center', marginBottom: 24, borderBottom: '2px solid #e5e7eb', paddingBottom: 16 }}>
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <Building size={20} className="text-accent" />
+                  <h1 className="text-[18px] font-bold text-ink m-0">We Space Community Mall Payap</h1>
+                </div>
+                <p className="text-[12px] text-ink-3 m-0">123 ถ.เชียงใหม่-ลำพูน อ.เมือง จ.เชียงใหม่ 50000</p>
+                <p className="text-[12px] text-ink-3 m-0">โทร. 053-123-456 | info@wespace-payap.com</p>
+                <h2 className="text-[16px] font-bold text-ink mt-3 mb-0">ใบเสร็จรับเงิน / RECEIPT</h2>
+              </div>
+
+              {/* Meta info */}
+              <div className="grid grid-cols-2 gap-4 mb-5 text-[13px]">
+                <div>
+                  <div className="text-[11px] text-ink-3 mb-0.5">เลขที่ใบเสร็จ</div>
+                  <div className="font-bold text-ink">{receiptNo}</div>
+                </div>
+                <div className="text-right">
+                  <div className="text-[11px] text-ink-3 mb-0.5">วันที่ชำระ</div>
+                  <div className="font-bold text-ink">{payment.paidDate || '—'}</div>
+                </div>
+                <div>
+                  <div className="text-[11px] text-ink-3 mb-0.5">ผู้เช่า</div>
+                  <div className="font-semibold text-ink">{tenant?.shopName || '—'}</div>
+                  <div className="text-[12px] text-ink-2">{tenant?.contactName}</div>
+                </div>
+                <div className="text-right">
+                  <div className="text-[11px] text-ink-3 mb-0.5">ยูนิต</div>
+                  <div className="font-semibold text-ink">{unit?.code || '—'}</div>
+                  <div className="text-[12px] text-ink-2">{unit?.sizeSqm} ตร.ม.</div>
+                </div>
+              </div>
+
+              {/* Items table */}
+              <div className="border border-border rounded-sm overflow-hidden mb-5">
+                <table className="w-full text-[13px]" style={{ borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr className="bg-bg">
+                      <th className="text-left px-4 py-2.5 font-semibold text-ink-2 border-b border-border">รายการ</th>
+                      <th className="text-center px-4 py-2.5 font-semibold text-ink-2 border-b border-border">ประจำเดือน</th>
+                      <th className="text-right px-4 py-2.5 font-semibold text-ink-2 border-b border-border">จำนวนเงิน (บาท)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr className="border-b border-border-soft">
+                      <td className="px-4 py-2.5 text-ink">ค่าเช่าพื้นที่</td>
+                      <td className="px-4 py-2.5 text-center text-ink-2">{monthLabel}</td>
+                      <td className="px-4 py-2.5 text-right font-medium text-ink">{rent.toLocaleString()}</td>
+                    </tr>
+                    <tr className="border-b border-border-soft">
+                      <td className="px-4 py-2.5 text-ink">ค่าส่วนกลาง</td>
+                      <td className="px-4 py-2.5 text-center text-ink-2">{monthLabel}</td>
+                      <td className="px-4 py-2.5 text-right font-medium text-ink">{commonFee.toLocaleString()}</td>
+                    </tr>
+                    {contract && (
+                      <tr className="border-b border-border-soft">
+                        <td className="px-4 py-2.5 text-ink-3 text-[12px]" colSpan={2}>สัญญาเลขที่ {contract.id.toUpperCase()} ({contract.startDate} ถึง {contract.endDate})</td>
+                        <td className="px-4 py-2.5"></td>
+                      </tr>
+                    )}
+                    <tr className="bg-accent-soft/30">
+                      <td className="px-4 py-3 font-bold text-ink" colSpan={2}>รวมทั้งสิ้น</td>
+                      <td className="px-4 py-3 text-right font-extrabold text-accent-ink text-[15px]">฿{total.toLocaleString()}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Payment info */}
+              <div className="bg-success-soft/30 border border-success/20 rounded-sm px-4 py-3 mb-5 flex items-center gap-3">
+                <CheckCircle size={18} className="text-success shrink-0" />
+                <div>
+                  <div className="text-[13px] font-semibold text-success">ชำระเงินเรียบร้อยแล้ว</div>
+                  <div className="text-[12px] text-ink-2">ชำระเมื่อ {payment.paidDate} | กำหนดชำระ {payment.dueDate}</div>
+                </div>
+              </div>
+
+              {/* Signature area */}
+              <div className="flex justify-between mt-8 pt-6 border-t border-border-soft">
+                <div className="text-center">
+                  <div className="w-[180px] border-b border-ink-3 mb-1 pb-8"></div>
+                  <div className="text-[12px] text-ink-3">ผู้ชำระเงิน</div>
+                </div>
+                <div className="text-center">
+                  <div className="w-[180px] border-b border-ink-3 mb-1 pb-8"></div>
+                  <div className="text-[12px] text-ink-3">ผู้รับเงิน</div>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="mt-6 text-center text-[11px] text-ink-3">
+                <p className="m-0">เอกสารนี้ออกโดยระบบ We Space Community Mall Payap Management System</p>
+                <p className="m-0">หากมีข้อสงสัยกรุณาติดต่อ 053-123-456</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Modal footer */}
+          <div className="flex items-center justify-between px-6 py-4 border-t border-border shrink-0">
+            <span className="text-[11.5px] text-ink-3">กดปุ่ม "พิมพ์ / PDF" เพื่อบันทึกเป็น PDF หรือพิมพ์ใบเสร็จ</span>
+            <div className="flex gap-2">
+              <button
+                onClick={handlePrint}
+                className="flex items-center gap-1.5 px-4 py-2 bg-surface border border-border text-ink rounded-sm text-[12.5px] font-medium cursor-pointer font-[inherit] hover:bg-bg transition-colors"
+              >
+                <Download size={13} />
+                บันทึก PDF
+              </button>
+              <button onClick={onClose} className="px-4 py-2 bg-surface border border-border rounded-sm text-[12.5px] font-medium text-ink-2 cursor-pointer font-[inherit] hover:bg-bg transition-colors">
+                ปิด
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
 export default function PaymentsPage() {
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('all');
   const [search, setSearch] = useState('');
+  const [receiptPayment, setReceiptPayment] = useState<Payment | null>(null);
 
   const getTenant = (id: string) => tenants.find((t) => t.id === id);
   const getUnit = (tenantId: string) => {
@@ -154,7 +368,10 @@ export default function PaymentsPage() {
                         </td>
                         <td className="px-4 py-3 text-center">
                           {p.status === 'paid' && (
-                            <button className="flex items-center gap-1 px-3 py-1.5 bg-surface border border-border text-ink-2 text-[12px] font-medium rounded-sm cursor-pointer font-[inherit] hover:bg-bg transition-colors">
+                            <button
+                              onClick={() => setReceiptPayment(p)}
+                              className="flex items-center gap-1 px-3 py-1.5 bg-surface border border-border text-ink-2 text-[12px] font-medium rounded-sm cursor-pointer font-[inherit] hover:bg-bg transition-colors"
+                            >
                               <FileText size={12} />
                               ใบเสร็จ
                             </button>
@@ -182,6 +399,11 @@ export default function PaymentsPage() {
           </span>
         </div>
       </main>
+
+      {/* ── Receipt Modal ── */}
+      {receiptPayment && (
+        <ReceiptModal payment={receiptPayment} onClose={() => setReceiptPayment(null)} />
+      )}
     </>
   );
 }
