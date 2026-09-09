@@ -34,7 +34,7 @@ export default function Sidebar() {
           W
         </div>
         <div className="brand-text">
-          <div className="text-white text-[13px] font-bold leading-tight">We Space Community Mall</div>
+          <div className="text-white text-[14px] font-bold leading-tight">We Space Community Mall</div>
           <div className="text-[11.5px] text-sidebar-text mt-px">Management System</div>
         </div>
       </div>

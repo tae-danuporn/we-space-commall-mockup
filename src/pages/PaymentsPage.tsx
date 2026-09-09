@@ -1,5 +1,5 @@
-import { useState, useMemo, useRef } from 'react';
-import { Search, X, FileText, CheckCircle, AlertCircle, Download, Printer, Building } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { Search, X, FileText, CheckCircle, AlertCircle, Download, Printer } from 'lucide-react';
 import Topbar from '../components/layout/Topbar';
 import { payments, tenants, units, contracts } from '../data/mockData';
 import type { PaymentStatus, Payment } from '../types';
@@ -14,7 +14,6 @@ type FilterStatus = 'all' | PaymentStatus;
 
 /* ── Receipt Modal ── */
 function ReceiptModal({ payment, onClose }: { payment: Payment; onClose: () => void }) {
-  const receiptRef = useRef<HTMLDivElement>(null);
   const tenant = tenants.find((t) => t.id === payment.tenantId);
   const unit = tenant ? units.find((u) => u.id === tenant.unitId) : null;
   const contract = contracts.find((c) => c.id === payment.contractId);
@@ -31,45 +30,149 @@ function ReceiptModal({ payment, onClose }: { payment: Payment; onClose: () => v
   const total = rent + commonFee;
 
   const handlePrint = () => {
-    const printContent = receiptRef.current;
-    if (!printContent) return;
-    const win = window.open('', '_blank', 'width=800,height=600');
+    const contractInfo = contract
+      ? `<tr><td colspan="2" style="padding:8px 12px;border:1px solid #ddd;color:#888;font-size:12px">สัญญาเลขที่ ${contract.id.toUpperCase()} (${contract.startDate} ถึง ${contract.endDate})</td><td style="padding:8px 12px;border:1px solid #ddd"></td></tr>`
+      : '';
+
+    const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>ใบเสร็จรับเงิน ${receiptNo}</title>
+  <style>
+    @page { size: A4; margin: 20mm 15mm; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Sarabun', 'Segoe UI', Tahoma, sans-serif; color: #1a1a1a; padding: 40px; }
+    .receipt { max-width: 560px; margin: 0 auto; }
+    .header { text-align: center; border-bottom: 2px solid #222; padding-bottom: 18px; margin-bottom: 24px; }
+    .header .title { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+    .header .addr { font-size: 12px; color: #666; margin: 2px 0; }
+    .header .doc-title { font-size: 16px; font-weight: 700; margin-top: 14px; letter-spacing: 1px; }
+    .meta { display: flex; justify-content: space-between; margin-bottom: 22px; }
+    .meta-col { }
+    .meta-col.right { text-align: right; }
+    .meta-label { font-size: 11px; color: #999; margin-bottom: 1px; }
+    .meta-value { font-size: 13px; font-weight: 600; }
+    .meta-sub { font-size: 12px; color: #666; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 22px; font-size: 13px; }
+    th { text-align: left; padding: 9px 12px; background: #f5f5f5; border: 1px solid #ddd; font-weight: 600; color: #555; }
+    th.center { text-align: center; }
+    th.right { text-align: right; }
+    td { padding: 9px 12px; border: 1px solid #ddd; }
+    td.center { text-align: center; }
+    td.right { text-align: right; }
+    .total-row td { font-weight: 700; background: #eef6ff; font-size: 14px; }
+    .paid-box { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; padding: 12px 16px; margin-bottom: 22px; display: flex; align-items: center; gap: 12px; }
+    .paid-icon { width: 28px; height: 28px; border-radius: 50%; background: #dcfce7; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .paid-icon svg { width: 16px; height: 16px; }
+    .paid-text { font-size: 13px; font-weight: 600; color: #16a34a; }
+    .paid-sub { font-size: 12px; color: #666; margin-top: 1px; }
+    .sig-area { display: flex; justify-content: space-between; margin-top: 50px; padding-top: 20px; border-top: 1px solid #e5e7eb; }
+    .sig-box { text-align: center; width: 200px; }
+    .sig-line { border-bottom: 1px solid #333; height: 60px; margin-bottom: 6px; }
+    .sig-label { font-size: 12px; color: #888; }
+    .doc-footer { text-align: center; margin-top: 36px; font-size: 11px; color: #aaa; }
+    .doc-footer p { margin: 2px 0; }
+    @media print {
+      body { padding: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="receipt">
+    <div class="header">
+      <div class="title">We Space Community Mall Payap</div>
+      <div class="addr">123 ถ.เชียงใหม่-ลำพูน อ.เมือง จ.เชียงใหม่ 50000</div>
+      <div class="addr">โทร. 053-123-456 | info@wespace-payap.com</div>
+      <div class="doc-title">ใบเสร็จรับเงิน / RECEIPT</div>
+    </div>
+
+    <div class="meta">
+      <div class="meta-col">
+        <div class="meta-label">เลขที่ใบเสร็จ</div>
+        <div class="meta-value">${receiptNo}</div>
+      </div>
+      <div class="meta-col right">
+        <div class="meta-label">วันที่ชำระ</div>
+        <div class="meta-value">${payment.paidDate || '—'}</div>
+      </div>
+    </div>
+
+    <div class="meta">
+      <div class="meta-col">
+        <div class="meta-label">ผู้เช่า</div>
+        <div class="meta-value">${tenant?.shopName || '—'}</div>
+        <div class="meta-sub">${tenant?.contactName || ''}</div>
+      </div>
+      <div class="meta-col right">
+        <div class="meta-label">ยูนิต</div>
+        <div class="meta-value">${unit?.code || '—'}</div>
+        <div class="meta-sub">${unit?.sizeSqm || 0} ตร.ม.</div>
+      </div>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>รายการ</th>
+          <th class="center">ประจำเดือน</th>
+          <th class="right">จำนวนเงิน (บาท)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>ค่าเช่าพื้นที่</td>
+          <td class="center">${monthLabel}</td>
+          <td class="right">${rent.toLocaleString()}</td>
+        </tr>
+        <tr>
+          <td>ค่าส่วนกลาง</td>
+          <td class="center">${monthLabel}</td>
+          <td class="right">${commonFee.toLocaleString()}</td>
+        </tr>
+        ${contractInfo}
+        <tr class="total-row">
+          <td colspan="2">รวมทั้งสิ้น</td>
+          <td class="right">฿${total.toLocaleString()}</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="paid-box">
+      <div class="paid-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+      </div>
+      <div>
+        <div class="paid-text">ชำระเงินเรียบร้อยแล้ว</div>
+        <div class="paid-sub">ชำระเมื่อ ${payment.paidDate} | กำหนดชำระ ${payment.dueDate}</div>
+      </div>
+    </div>
+
+    <div class="sig-area">
+      <div class="sig-box">
+        <div class="sig-line"></div>
+        <div class="sig-label">ผู้ชำระเงิน</div>
+      </div>
+      <div class="sig-box">
+        <div class="sig-line"></div>
+        <div class="sig-label">ผู้รับเงิน</div>
+      </div>
+    </div>
+
+    <div class="doc-footer">
+      <p>เอกสารนี้ออกโดยระบบ We Space Community Mall Payap Management System</p>
+      <p>หากมีข้อสงสัยกรุณาติดต่อ 053-123-456</p>
+    </div>
+  </div>
+</body>
+</html>`;
+
+    const win = window.open('', '_blank', 'width=800,height=900');
     if (!win) return;
-    win.document.write(`
-      <html>
-      <head>
-        <title>ใบเสร็จรับเงิน ${receiptNo}</title>
-        <style>
-          body { font-family: 'Segoe UI', Tahoma, sans-serif; padding: 40px; color: #1a1a1a; }
-          .receipt { max-width: 600px; margin: 0 auto; }
-          .header { text-align: center; margin-bottom: 24px; border-bottom: 2px solid #333; padding-bottom: 16px; }
-          .header h1 { font-size: 20px; margin: 0 0 4px; }
-          .header p { font-size: 12px; color: #666; margin: 2px 0; }
-          .meta { display: flex; justify-content: space-between; margin-bottom: 20px; font-size: 13px; }
-          .meta-item { }
-          .meta-label { color: #888; font-size: 11px; }
-          .meta-value { font-weight: 600; }
-          table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 13px; }
-          th { text-align: left; padding: 8px 12px; background: #f5f5f5; border: 1px solid #ddd; font-weight: 600; }
-          td { padding: 8px 12px; border: 1px solid #ddd; }
-          td.right { text-align: right; }
-          .total-row td { font-weight: 700; background: #f0f9ff; font-size: 14px; }
-          .footer { margin-top: 40px; display: flex; justify-content: space-between; font-size: 12px; color: #888; }
-          .signature { text-align: center; margin-top: 60px; }
-          .signature .line { border-top: 1px solid #333; width: 200px; margin: 0 auto 4px; }
-          .signature p { font-size: 12px; color: #666; }
-          .stamp { display: inline-block; border: 2px solid #22c55e; color: #22c55e; padding: 4px 16px; border-radius: 4px; font-weight: 700; font-size: 14px; transform: rotate(-5deg); margin-top: 12px; }
-          @media print { body { padding: 20px; } }
-        </style>
-      </head>
-      <body>
-        ${printContent.innerHTML}
-      </body>
-      </html>
-    `);
+    win.document.write(html);
     win.document.close();
     win.focus();
-    win.print();
+    setTimeout(() => win.print(), 300);
   };
 
   return (
@@ -103,78 +206,75 @@ function ReceiptModal({ payment, onClose }: { payment: Payment; onClose: () => v
             </div>
           </div>
 
-          {/* Receipt content */}
+          {/* Receipt preview (in-modal) */}
           <div className="overflow-y-auto flex-1 p-6">
-            <div ref={receiptRef}>
-              {/* Receipt header */}
-              <div className="header" style={{ textAlign: 'center', marginBottom: 24, borderBottom: '2px solid #e5e7eb', paddingBottom: 16 }}>
-                <div className="flex items-center justify-center gap-2 mb-2">
-                  <Building size={20} className="text-accent" />
-                  <h1 className="text-[18px] font-bold text-ink m-0">We Space Community Mall Payap</h1>
-                </div>
-                <p className="text-[12px] text-ink-3 m-0">123 ถ.เชียงใหม่-ลำพูน อ.เมือง จ.เชียงใหม่ 50000</p>
-                <p className="text-[12px] text-ink-3 m-0">โทร. 053-123-456 | info@wespace-payap.com</p>
-                <h2 className="text-[16px] font-bold text-ink mt-3 mb-0">ใบเสร็จรับเงิน / RECEIPT</h2>
+            <div style={{ maxWidth: 520, margin: '0 auto' }}>
+              {/* Header */}
+              <div style={{ textAlign: 'center', borderBottom: '2px solid #222', paddingBottom: 16, marginBottom: 22 }}>
+                <div style={{ fontSize: 18, fontWeight: 700 }}>We Space Community Mall Payap</div>
+                <div className="text-[12px] text-ink-3">123 ถ.เชียงใหม่-ลำพูน อ.เมือง จ.เชียงใหม่ 50000</div>
+                <div className="text-[12px] text-ink-3">โทร. 053-123-456 | info@wespace-payap.com</div>
+                <div style={{ fontSize: 15, fontWeight: 700, marginTop: 12, letterSpacing: 1 }}>ใบเสร็จรับเงิน / RECEIPT</div>
               </div>
 
-              {/* Meta info */}
-              <div className="grid grid-cols-2 gap-4 mb-5 text-[13px]">
+              {/* Meta */}
+              <div className="grid grid-cols-2 gap-3 mb-5 text-[13px]">
                 <div>
-                  <div className="text-[11px] text-ink-3 mb-0.5">เลขที่ใบเสร็จ</div>
+                  <div className="text-[11px] text-ink-3">เลขที่ใบเสร็จ</div>
                   <div className="font-bold text-ink">{receiptNo}</div>
                 </div>
                 <div className="text-right">
-                  <div className="text-[11px] text-ink-3 mb-0.5">วันที่ชำระ</div>
+                  <div className="text-[11px] text-ink-3">วันที่ชำระ</div>
                   <div className="font-bold text-ink">{payment.paidDate || '—'}</div>
                 </div>
                 <div>
-                  <div className="text-[11px] text-ink-3 mb-0.5">ผู้เช่า</div>
+                  <div className="text-[11px] text-ink-3">ผู้เช่า</div>
                   <div className="font-semibold text-ink">{tenant?.shopName || '—'}</div>
                   <div className="text-[12px] text-ink-2">{tenant?.contactName}</div>
                 </div>
                 <div className="text-right">
-                  <div className="text-[11px] text-ink-3 mb-0.5">ยูนิต</div>
+                  <div className="text-[11px] text-ink-3">ยูนิต</div>
                   <div className="font-semibold text-ink">{unit?.code || '—'}</div>
                   <div className="text-[12px] text-ink-2">{unit?.sizeSqm} ตร.ม.</div>
                 </div>
               </div>
 
-              {/* Items table */}
+              {/* Table */}
               <div className="border border-border rounded-sm overflow-hidden mb-5">
                 <table className="w-full text-[13px]" style={{ borderCollapse: 'collapse' }}>
                   <thead>
                     <tr className="bg-bg">
-                      <th className="text-left px-4 py-2.5 font-semibold text-ink-2 border-b border-border">รายการ</th>
-                      <th className="text-center px-4 py-2.5 font-semibold text-ink-2 border-b border-border">ประจำเดือน</th>
-                      <th className="text-right px-4 py-2.5 font-semibold text-ink-2 border-b border-border">จำนวนเงิน (บาท)</th>
+                      <th className="text-left px-3 py-2 font-semibold text-ink-2 border-b border-border">รายการ</th>
+                      <th className="text-center px-3 py-2 font-semibold text-ink-2 border-b border-border">ประจำเดือน</th>
+                      <th className="text-right px-3 py-2 font-semibold text-ink-2 border-b border-border">จำนวนเงิน (บาท)</th>
                     </tr>
                   </thead>
                   <tbody>
                     <tr className="border-b border-border-soft">
-                      <td className="px-4 py-2.5 text-ink">ค่าเช่าพื้นที่</td>
-                      <td className="px-4 py-2.5 text-center text-ink-2">{monthLabel}</td>
-                      <td className="px-4 py-2.5 text-right font-medium text-ink">{rent.toLocaleString()}</td>
+                      <td className="px-3 py-2 text-ink">ค่าเช่าพื้นที่</td>
+                      <td className="px-3 py-2 text-center text-ink-2">{monthLabel}</td>
+                      <td className="px-3 py-2 text-right font-medium text-ink">{rent.toLocaleString()}</td>
                     </tr>
                     <tr className="border-b border-border-soft">
-                      <td className="px-4 py-2.5 text-ink">ค่าส่วนกลาง</td>
-                      <td className="px-4 py-2.5 text-center text-ink-2">{monthLabel}</td>
-                      <td className="px-4 py-2.5 text-right font-medium text-ink">{commonFee.toLocaleString()}</td>
+                      <td className="px-3 py-2 text-ink">ค่าส่วนกลาง</td>
+                      <td className="px-3 py-2 text-center text-ink-2">{monthLabel}</td>
+                      <td className="px-3 py-2 text-right font-medium text-ink">{commonFee.toLocaleString()}</td>
                     </tr>
                     {contract && (
                       <tr className="border-b border-border-soft">
-                        <td className="px-4 py-2.5 text-ink-3 text-[12px]" colSpan={2}>สัญญาเลขที่ {contract.id.toUpperCase()} ({contract.startDate} ถึง {contract.endDate})</td>
-                        <td className="px-4 py-2.5"></td>
+                        <td className="px-3 py-2 text-ink-3 text-[12px]" colSpan={2}>สัญญาเลขที่ {contract.id.toUpperCase()} ({contract.startDate} ถึง {contract.endDate})</td>
+                        <td className="px-3 py-2"></td>
                       </tr>
                     )}
                     <tr className="bg-accent-soft/30">
-                      <td className="px-4 py-3 font-bold text-ink" colSpan={2}>รวมทั้งสิ้น</td>
-                      <td className="px-4 py-3 text-right font-extrabold text-accent-ink text-[15px]">฿{total.toLocaleString()}</td>
+                      <td className="px-3 py-2.5 font-bold text-ink" colSpan={2}>รวมทั้งสิ้น</td>
+                      <td className="px-3 py-2.5 text-right font-extrabold text-accent-ink text-[15px]">฿{total.toLocaleString()}</td>
                     </tr>
                   </tbody>
                 </table>
               </div>
 
-              {/* Payment info */}
+              {/* Status */}
               <div className="bg-success-soft/30 border border-success/20 rounded-sm px-4 py-3 mb-5 flex items-center gap-3">
                 <CheckCircle size={18} className="text-success shrink-0" />
                 <div>
@@ -183,29 +283,27 @@ function ReceiptModal({ payment, onClose }: { payment: Payment; onClose: () => v
                 </div>
               </div>
 
-              {/* Signature area */}
-              <div className="flex justify-between mt-8 pt-6 border-t border-border-soft">
+              {/* Signatures */}
+              <div className="flex justify-between mt-6 pt-5 border-t border-border-soft">
                 <div className="text-center">
-                  <div className="w-[180px] border-b border-ink-3 mb-1 pb-8"></div>
+                  <div style={{ width: 160, borderBottom: '1px solid #888', height: 50, marginBottom: 4 }}></div>
                   <div className="text-[12px] text-ink-3">ผู้ชำระเงิน</div>
                 </div>
                 <div className="text-center">
-                  <div className="w-[180px] border-b border-ink-3 mb-1 pb-8"></div>
+                  <div style={{ width: 160, borderBottom: '1px solid #888', height: 50, marginBottom: 4 }}></div>
                   <div className="text-[12px] text-ink-3">ผู้รับเงิน</div>
                 </div>
               </div>
 
-              {/* Footer */}
-              <div className="mt-6 text-center text-[11px] text-ink-3">
+              <div className="mt-5 text-center text-[11px] text-ink-3">
                 <p className="m-0">เอกสารนี้ออกโดยระบบ We Space Community Mall Payap Management System</p>
-                <p className="m-0">หากมีข้อสงสัยกรุณาติดต่อ 053-123-456</p>
               </div>
             </div>
           </div>
 
           {/* Modal footer */}
           <div className="flex items-center justify-between px-6 py-4 border-t border-border shrink-0">
-            <span className="text-[11.5px] text-ink-3">กดปุ่ม "พิมพ์ / PDF" เพื่อบันทึกเป็น PDF หรือพิมพ์ใบเสร็จ</span>
+            <span className="text-[11.5px] text-ink-3">กดปุ่ม "พิมพ์ / PDF" เพื่อบันทึกเป็น PDF หรือสั่งพิมพ์</span>
             <div className="flex gap-2">
               <button
                 onClick={handlePrint}
