@@ -4,10 +4,13 @@ import {
 } from 'recharts';
 import {
   Wrench, FileText, CreditCard, ChevronUp, UserPlus,
+  MapPin, Users, AlertTriangle, TrendingUp, ArrowRight,
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import Topbar from '../components/layout/Topbar';
 import {
   dashboardKPI, revenueMonths, activities, expiringContractsList,
+  maintenanceRequests, tenants, payments,
 } from '../data/mockData';
 import type { ActivityType } from '../types';
 
@@ -44,6 +47,20 @@ function RevenueTooltip({ active, payload }: { active?: boolean; payload?: Array
   );
 }
 
+/* ── Top overdue tenants ── */
+const overdueList = payments
+  .filter((p) => p.status === 'overdue')
+  .map((p) => ({
+    ...p,
+    tenant: tenants.find((t) => t.id === p.tenantId),
+  }))
+  .slice(0, 3);
+
+/* ── Recent maintenance ── */
+const recentMaintenance = maintenanceRequests
+  .filter((m) => m.status !== 'done')
+  .slice(0, 3);
+
 export default function DashboardPage() {
   const kpi = dashboardKPI;
 
@@ -53,6 +70,14 @@ export default function DashboardPage() {
 
       <main className="p-[26px_30px_50px]">
 
+        {/* ── Quick Actions ── */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+          <QuickAction to="/units" icon={<MapPin size={18} />} label="ดูแผนผังพื้นที่" color="bg-accent-soft text-accent-ink" />
+          <QuickAction to="/leads" icon={<UserPlus size={18} />} label="ผู้สนใจเช่าใหม่" color="bg-success-soft text-success" />
+          <QuickAction to="/payments" icon={<CreditCard size={18} />} label="ติดตามค่าเช่า" color="bg-warning-soft text-accent-ink" />
+          <QuickAction to="/maintenance" icon={<Wrench size={18} />} label="แจ้งซ่อมค้าง" color="bg-danger-soft text-danger" />
+        </div>
+
         {/* ── KPI Row ── */}
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-[1.5fr_1fr_1fr_1fr] gap-[18px] mb-[22px]">
 
@@ -60,7 +85,9 @@ export default function DashboardPage() {
           <div className="bg-surface border border-border rounded-card p-[19px_20px]">
             <div className="flex items-baseline justify-between mb-[14px]">
               <p className="text-[13.5px] font-bold text-ink m-0">สถานะพื้นที่เช่า</p>
-              <span className="text-[11.5px] text-ink-3">รวม {kpi.totalUnits} ยูนิต</span>
+              <Link to="/units" className="text-[11.5px] text-accent font-medium hover:text-accent-ink no-underline flex items-center gap-1">
+                ดูทั้งหมด <ArrowRight size={11} />
+              </Link>
             </div>
             <div className="text-[28px] font-extrabold tracking-tight">
               {kpi.rentedUnits} <span className="text-[13px] font-semibold text-ink-2 ml-1">ยูนิตมีผู้เช่าแล้ว</span>
@@ -91,17 +118,30 @@ export default function DashboardPage() {
               <ChevronUp size={13} />
               เพิ่มขึ้น {kpi.revenueTrend} จากเดือนก่อน
             </div>
+            <div className="mt-3 pt-3 border-t border-border-soft">
+              <div className="flex items-center justify-between text-[12px]">
+                <span className="text-ink-3">อัตราการเก็บเงินได้</span>
+                <span className="font-bold text-success">72%</span>
+              </div>
+              <div className="h-1.5 rounded-full bg-border-soft mt-1.5 overflow-hidden">
+                <div className="h-full rounded-full bg-success" style={{ width: '72%' }} />
+              </div>
+            </div>
           </div>
 
           {/* KPI 3: Overdue */}
           <div className="bg-surface border border-border rounded-card p-[19px_20px]">
-            <div className="mb-[14px]">
+            <div className="mb-[14px] flex items-baseline justify-between">
               <p className="text-[13.5px] font-bold text-ink m-0">ยอดค้างชำระ</p>
+              <Link to="/payments" className="text-[11.5px] text-accent font-medium hover:text-accent-ink no-underline flex items-center gap-1">
+                ดู <ArrowRight size={11} />
+              </Link>
             </div>
             <div className="text-[25px] font-extrabold tracking-tight text-danger mb-1.5">
               ฿{kpi.overdueAmount.toLocaleString()}
             </div>
-            <div className="text-[12px] text-ink-3">
+            <div className="text-[12px] text-ink-3 flex items-center gap-1">
+              <AlertTriangle size={12} className="text-danger" />
               จาก {kpi.overdueShops} ร้านค้าที่ยังไม่ชำระ
             </div>
           </div>
@@ -111,8 +151,9 @@ export default function DashboardPage() {
             <div className="mb-[14px]">
               <p className="text-[13.5px] font-bold text-ink m-0">งานที่ต้องติดตาม</p>
             </div>
-            <TaskRow icon={<Wrench size={16} />} label="แจ้งซ่อมค้างดำเนินการ" count={`${kpi.pendingRepairs} รายการ`} variant="repair" />
-            <TaskRow icon={<FileText size={16} />} label="สัญญาใกล้หมดอายุ" count={`${kpi.expiringContracts} สัญญา`} variant="contract" />
+            <TaskRow icon={<Wrench size={16} />} label="แจ้งซ่อมค้างดำเนินการ" count={`${kpi.pendingRepairs} รายการ`} variant="repair" to="/maintenance" />
+            <TaskRow icon={<FileText size={16} />} label="สัญญาใกล้หมดอายุ" count={`${kpi.expiringContracts} สัญญา`} variant="contract" to="/contracts" />
+            <TaskRow icon={<Users size={16} />} label="ผู้สนใจเช่าใหม่" count="7 ราย" variant="contract" to="/leads" />
           </div>
         </div>
 
@@ -123,7 +164,12 @@ export default function DashboardPage() {
           <div className="bg-surface border border-border rounded-card p-[19px_20px]">
             <div className="flex items-baseline justify-between mb-[14px]">
               <p className="text-[13.5px] font-bold text-ink m-0">แนวโน้มรายรับ 6 เดือนล่าสุด</p>
-              <span className="text-[11.5px] text-ink-3">หน่วย: บาท</span>
+              <div className="flex items-center gap-2">
+                <span className="flex items-center gap-1 text-[11.5px] text-success font-medium">
+                  <TrendingUp size={12} /> ขาขึ้น
+                </span>
+                <span className="text-[11.5px] text-ink-3">หน่วย: บาท</span>
+              </div>
             </div>
             <div className="h-[170px]">
               <ResponsiveContainer width="100%" height="100%">
@@ -155,7 +201,7 @@ export default function DashboardPage() {
               <p className="text-[13.5px] font-bold text-ink m-0">สรุปสถานะพื้นที่เช่า</p>
             </div>
             <div className="flex items-center gap-[18px]">
-              <div className="w-[104px] h-[104px] shrink-0">
+              <div className="w-[104px] h-[104px] shrink-0 relative">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
@@ -175,6 +221,11 @@ export default function DashboardPage() {
                     </Pie>
                   </PieChart>
                 </ResponsiveContainer>
+                {/* Center label */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <span className="text-[16px] font-extrabold text-ink leading-none">40</span>
+                  <span className="text-[9px] text-ink-3">ยูนิต</span>
+                </div>
               </div>
               <div className="flex flex-col gap-2.5">
                 <LegendItem color="bg-success" label="เช่าแล้ว" value="45%" />
@@ -185,8 +236,8 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* ── List Row ── */}
-        <div className="grid grid-cols-1 xl:grid-cols-[1.7fr_1fr] gap-[18px]">
+        {/* ── List Row: 3 columns ── */}
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-[18px]">
 
           {/* Activity feed */}
           <div className="bg-surface border border-border rounded-card p-[19px_20px]">
@@ -216,8 +267,11 @@ export default function DashboardPage() {
 
           {/* Expiring contracts */}
           <div className="bg-surface border border-border rounded-card p-[19px_20px]">
-            <div className="mb-[14px]">
+            <div className="mb-[14px] flex items-baseline justify-between">
               <p className="text-[13.5px] font-bold text-ink m-0">สัญญาใกล้หมดอายุ</p>
+              <Link to="/contracts" className="text-[11.5px] text-accent font-medium hover:text-accent-ink no-underline flex items-center gap-1">
+                ดูทั้งหมด <ArrowRight size={11} />
+              </Link>
             </div>
             {expiringContractsList.map((c, idx) => (
               <div
@@ -240,6 +294,50 @@ export default function DashboardPage() {
               </div>
             ))}
           </div>
+
+          {/* Overdue payments + Recent repairs */}
+          <div className="space-y-[18px]">
+            {/* Top overdue */}
+            <div className="bg-surface border border-border rounded-card p-[19px_20px]">
+              <div className="mb-[14px] flex items-baseline justify-between">
+                <p className="text-[13.5px] font-bold text-ink m-0">ค้างชำระล่าสุด</p>
+                <Link to="/payments" className="text-[11.5px] text-accent font-medium hover:text-accent-ink no-underline flex items-center gap-1">
+                  ดู <ArrowRight size={11} />
+                </Link>
+              </div>
+              {overdueList.map((item, idx) => (
+                <div key={item.id} className={`flex items-center justify-between py-[8px] ${idx < overdueList.length - 1 ? 'border-b border-border-soft' : ''} ${idx === 0 ? 'pt-0' : ''}`}>
+                  <span className="text-[13px] font-medium text-ink">{item.tenant?.shopName}</span>
+                  <span className="text-[12.5px] font-bold text-danger">฿{item.amount.toLocaleString()}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Recent maintenance */}
+            <div className="bg-surface border border-border rounded-card p-[19px_20px]">
+              <div className="mb-[14px] flex items-baseline justify-between">
+                <p className="text-[13.5px] font-bold text-ink m-0">แจ้งซ่อมล่าสุด</p>
+                <Link to="/maintenance" className="text-[11.5px] text-accent font-medium hover:text-accent-ink no-underline flex items-center gap-1">
+                  ดู <ArrowRight size={11} />
+                </Link>
+              </div>
+              {recentMaintenance.map((m, idx) => (
+                <div key={m.id} className={`flex items-center justify-between py-[8px] ${idx < recentMaintenance.length - 1 ? 'border-b border-border-soft' : ''} ${idx === 0 ? 'pt-0' : ''}`}>
+                  <div>
+                    <div className="text-[12.5px] font-medium text-ink">{m.issue}</div>
+                    <div className="text-[11px] text-ink-3">{m.createdAt}</div>
+                  </div>
+                  <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full shrink-0 ${
+                    m.priority === 'high' ? 'bg-danger-soft text-danger' :
+                    m.priority === 'medium' ? 'bg-warning-soft text-accent-ink' :
+                    'bg-neutral-status-soft text-ink-2'
+                  }`}>
+                    {m.priority === 'high' ? 'เร่งด่วน' : m.priority === 'medium' ? 'ปานกลาง' : 'ต่ำ'}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
 
       </main>
@@ -248,6 +346,19 @@ export default function DashboardPage() {
 }
 
 /* ── Sub-components ── */
+
+function QuickAction({ to, icon, label, color }: { to: string; icon: React.ReactNode; label: string; color: string }) {
+  return (
+    <Link to={to} className="no-underline">
+      <div className={`flex items-center gap-3 bg-surface border border-border rounded-card px-4 py-3 cursor-pointer hover:shadow-sm transition-shadow`}>
+        <div className={`w-9 h-9 rounded-sm flex items-center justify-center shrink-0 ${color}`}>
+          {icon}
+        </div>
+        <span className="text-[13px] font-semibold text-ink">{label}</span>
+      </div>
+    </Link>
+  );
+}
 
 function LegendItem({ color, label, value }: { color: string; label: string; value: string | number }) {
   return (
@@ -258,22 +369,24 @@ function LegendItem({ color, label, value }: { color: string; label: string; val
   );
 }
 
-function TaskRow({ icon, label, count, variant }: { icon: React.ReactNode; label: string; count: string; variant: 'repair' | 'contract' }) {
+function TaskRow({ icon, label, count, variant, to }: { icon: React.ReactNode; label: string; count: string; variant: 'repair' | 'contract'; to: string }) {
   return (
-    <div className="flex items-center justify-between py-[9px] border-b border-border-soft last:border-b-0 last:pb-0 first:pt-0">
-      <div className="flex items-center gap-[9px] text-[13px] text-ink">
-        <span className="text-ink-3">{icon}</span>
-        {label}
+    <Link to={to} className="no-underline">
+      <div className="flex items-center justify-between py-[9px] border-b border-border-soft last:border-b-0 last:pb-0 first:pt-0 hover:bg-bg/50 transition-colors -mx-1 px-1 rounded-sm">
+        <div className="flex items-center gap-[9px] text-[13px] text-ink">
+          <span className="text-ink-3">{icon}</span>
+          {label}
+        </div>
+        <span
+          className={`text-[12.5px] font-bold px-[9px] py-[2px] rounded-[20px] ${
+            variant === 'repair'
+              ? 'bg-danger-soft text-danger'
+              : 'bg-warning-soft text-accent-ink'
+          }`}
+        >
+          {count}
+        </span>
       </div>
-      <span
-        className={`text-[12.5px] font-bold px-[9px] py-[2px] rounded-[20px] ${
-          variant === 'repair'
-            ? 'bg-danger-soft text-danger'
-            : 'bg-warning-soft text-accent-ink'
-        }`}
-      >
-        {count}
-      </span>
-    </div>
+    </Link>
   );
 }

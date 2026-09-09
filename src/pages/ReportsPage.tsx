@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
   PieChart, Pie, LineChart, Line, CartesianGrid,
 } from 'recharts';
+import { Download, Calendar } from 'lucide-react';
 import Topbar from '../components/layout/Topbar';
 import { revenueMonths, tenants, units } from '../data/mockData';
 
@@ -35,11 +37,79 @@ const COLORS = [
   'var(--color-ink-3)',
 ];
 
+type Period = '6m' | '12m' | 'ytd';
+
 export default function ReportsPage() {
+  const [period, setPeriod] = useState<Period>('6m');
+  const [showExportToast, setShowExportToast] = useState(false);
+
+  const totalRevenue = revenueMonths.reduce((sum, r) => sum + r.amount, 0);
+  const avgRevenue = Math.round(totalRevenue / revenueMonths.length);
+  const growth = ((revenueMonths[revenueMonths.length - 1].amount - revenueMonths[0].amount) / revenueMonths[0].amount * 100).toFixed(1);
+
+  const handleExport = () => {
+    setShowExportToast(true);
+    setTimeout(() => setShowExportToast(false), 2000);
+  };
+
   return (
     <>
       <Topbar title="รายงาน" subtitle="สรุปข้อมูลและกราฟ" />
       <main className="p-[26px_30px_50px]">
+
+        {/* ── Toolbar ── */}
+        <div className="flex items-center justify-between mb-5">
+          <div className="flex items-center gap-2">
+            <Calendar size={15} className="text-ink-3" />
+            <div className="flex border border-border rounded-sm overflow-hidden">
+              {([
+                { key: '6m' as Period, label: '6 เดือน' },
+                { key: '12m' as Period, label: '12 เดือน' },
+                { key: 'ytd' as Period, label: 'ปีนี้' },
+              ]).map((p) => (
+                <button
+                  key={p.key}
+                  onClick={() => setPeriod(p.key)}
+                  className={`px-3 py-[6px] text-[12.5px] font-medium border-none cursor-pointer font-[inherit] transition-colors ${
+                    period === p.key
+                      ? 'bg-accent text-white'
+                      : 'bg-surface text-ink-2 hover:bg-bg'
+                  }`}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <button
+            onClick={handleExport}
+            className="flex items-center gap-1.5 bg-surface border border-border text-ink px-3.5 py-[8px] rounded-sm text-[13px] font-medium cursor-pointer font-[inherit] hover:bg-bg transition-colors"
+          >
+            <Download size={14} />
+            ส่งออก PDF
+          </button>
+        </div>
+
+        {/* ── KPI summary ── */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-[14px] mb-5">
+          <div className="bg-surface border border-border rounded-card px-4 py-3">
+            <div className="text-[12px] text-ink-3 mb-1">รายรับรวม ({period === '6m' ? '6 เดือน' : period === '12m' ? '12 เดือน' : 'ปีนี้'})</div>
+            <div className="text-[20px] font-extrabold text-accent-ink">฿{totalRevenue.toLocaleString()}</div>
+          </div>
+          <div className="bg-surface border border-border rounded-card px-4 py-3">
+            <div className="text-[12px] text-ink-3 mb-1">เฉลี่ย/เดือน</div>
+            <div className="text-[20px] font-extrabold text-ink">฿{avgRevenue.toLocaleString()}</div>
+          </div>
+          <div className="bg-surface border border-border rounded-card px-4 py-3">
+            <div className="text-[12px] text-ink-3 mb-1">การเติบโต</div>
+            <div className="text-[20px] font-extrabold text-success">+{growth}%</div>
+          </div>
+          <div className="bg-surface border border-border rounded-card px-4 py-3">
+            <div className="text-[12px] text-ink-3 mb-1">อัตราการเช่า (ล่าสุด)</div>
+            <div className="text-[20px] font-extrabold text-success">{occupancyTrend[occupancyTrend.length - 1].rate}%</div>
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-[18px]">
 
           {/* ── Revenue trend ── */}
@@ -95,7 +165,7 @@ export default function ReportsPage() {
               <p className="text-[13.5px] font-bold text-ink m-0">รายรับแยกตามประเภทร้านค้า</p>
             </div>
             <div className="flex items-center gap-6">
-              <div className="w-[160px] h-[160px] shrink-0">
+              <div className="w-[160px] h-[160px] shrink-0 relative">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie data={categoryRevenue} cx="50%" cy="50%" innerRadius={40} outerRadius={75} dataKey="value" stroke="none">
@@ -109,6 +179,10 @@ export default function ReportsPage() {
                     />
                   </PieChart>
                 </ResponsiveContainer>
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <span className="text-[14px] font-extrabold text-ink leading-none">{categoryRevenue.length}</span>
+                  <span className="text-[9px] text-ink-3">ประเภท</span>
+                </div>
               </div>
               <div className="flex flex-col gap-2">
                 {categoryRevenue.map((cat, idx) => (
@@ -156,6 +230,21 @@ export default function ReportsPage() {
 
         </div>
       </main>
+
+      {/* ── Export toast ── */}
+      {showExportToast && (
+        <div className="fixed bottom-6 right-6 z-50 bg-surface border border-border rounded-card shadow-lg px-5 py-3 flex items-center gap-3 animate-in">
+          <div className="w-8 h-8 rounded-full bg-success-soft flex items-center justify-center">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M20 6 9 17l-5-5" />
+            </svg>
+          </div>
+          <div>
+            <div className="text-[13px] font-semibold text-ink">กำลังจัดเตรียมรายงาน</div>
+            <div className="text-[11.5px] text-ink-3">ระบบจะส่งไฟล์ PDF ทางอีเมล</div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
